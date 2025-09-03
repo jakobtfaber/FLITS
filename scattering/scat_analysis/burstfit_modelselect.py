@@ -42,13 +42,9 @@ from typing import Dict, Sequence, Tuple
 import numpy as np
 from numpy.typing import NDArray
 
-from .burstfit import (
-    FRBModel,
-    FRBFitter,
-    FRBParams,
-    build_priors,
-    compute_bic,
-)
+from .model import FRBModel
+from .parameters import FRBParams
+from .sampler import FRBFitter, build_priors, compute_bic
 
 __all__ = ["fit_models_bic"]
 

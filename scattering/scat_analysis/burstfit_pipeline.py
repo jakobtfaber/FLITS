@@ -25,15 +25,10 @@ import scipy as sp
 from scipy.ndimage import gaussian_filter1d
 from scipy.optimize import minimize
 
-from .burstfit import (
-    FRBModel,
-    FRBFitter,
-    FRBParams,
-    build_priors,
-    plot_dynamic,
-    goodness_of_fit,
-    downsample,
-)
+from .model import FRBModel, downsample
+from .parameters import FRBParams
+from .sampler import FRBFitter, build_priors
+from .plotting import plot_dynamic, goodness_of_fit
 from .burstfit_modelselect import fit_models_bic
 from .burstfit_robust import (
     subband_consistency,
