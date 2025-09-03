@@ -15,14 +15,9 @@ from scipy.optimize import curve_fit
 from scipy.signal import fftconvolve
 
 # ## REFACTOR ##: Corrected the relative import to work with the pipeline structure.
-from .burstfit import (
-    FRBModel,
-    FRBFitter,
-    FRBParams,
-    build_priors,
-    DM_DELAY_MS,
-    DM_SMEAR_MS,
-)
+from .model import FRBModel, DM_DELAY_MS, DM_SMEAR_MS
+from .parameters import FRBParams
+from .sampler import FRBFitter, build_priors
 
 __all__ = [
     "subband_consistency",
