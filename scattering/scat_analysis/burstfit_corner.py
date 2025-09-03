@@ -19,6 +19,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 from numpy.typing import NDArray
 
+# Initialize logger for this module  
+logger = logging.getLogger(__name__)
+
 from typing import List, Tuple, Dict, Any
 
 from chainconsumer import ChainConsumer
@@ -32,8 +35,8 @@ def diagnose_sampler_convergence(sampler, param_names):
     
     n_steps, n_walkers, n_params = chain.shape
     
-    print(f"Chain shape: {chain.shape}")
-    print(f"Total samples: {n_steps * n_walkers}")
+    logger.info(f"Chain shape: {chain.shape}")
+    logger.info(f"Total samples: {n_steps * n_walkers}")
     
     # 1. Check log probability evolution
     fig, axes = plt.subplots(2, 1, figsize=(10, 8))
@@ -71,14 +74,14 @@ def diagnose_sampler_convergence(sampler, param_names):
     # 3. Autocorrelation analysis
     try:
         tau = sampler.get_autocorr_time(quiet=True)
-        print("\nAutocorrelation times:")
+        logger.info("\nAutocorrelation times:")
         for name, t in zip(param_names, tau):
-            print(f"  {name}: {t:.1f} steps")
+            logger.info(f"  {name}: {t:.1f} steps")
         
-        print(f"\nSuggested burn-in: {int(2 * np.max(tau))} steps")
-        print(f"Suggested thinning: {int(0.5 * np.min(tau))}")
+        logger.info(f"\nSuggested burn-in: {int(2 * np.max(tau))} steps")
+        logger.info(f"Suggested thinning: {int(0.5 * np.min(tau))}")
     except:
-        print("Could not compute autocorrelation time (chain might be too short)")
+        logger.warning("Could not compute autocorrelation time (chain might be too short)")
     
     # 4. Gelman-Rubin statistic (R-hat)
     def gelman_rubin(chain):
@@ -103,11 +106,11 @@ def diagnose_sampler_convergence(sampler, param_names):
         R_hat = np.sqrt(var_est / W)
         return R_hat
     
-    print("\nGelman-Rubin R-hat (should be < 1.1):")
+    logger.info("\nGelman-Rubin R-hat (should be < 1.1):")
     for i, name in enumerate(param_names):
         r_hat = gelman_rubin(chain[:, :, i])
         status = "✓" if r_hat < 1.1 else "✗"
-        print(f"  {name}: {r_hat:.3f} {status}")
+        logger.info(f"  {name}: {r_hat:.3f} {status}")
     
     return chain, log_prob
 
@@ -137,7 +140,7 @@ def get_clean_samples(sampler, param_names, verbose=True):
         burn_in = n_steps // 4  # Default fallback
     
     if verbose:
-        print(f"Detected burn-in: {burn_in} steps")
+        logger.info(f"Detected burn-in: {burn_in} steps")
     
     # 2. Compute autocorrelation time for thinning
     try:
@@ -148,14 +151,14 @@ def get_clean_samples(sampler, param_names, verbose=True):
         thin = 5  # Default if autocorrelation fails
     
     if verbose:
-        print(f"Using thinning: {thin}")
+        logger.info(f"Using thinning: {thin}")
     
     # 3. Get the samples
     flat_samples = sampler.get_chain(discard=burn_in, thin=thin, flat=True)
     flat_log_prob = sampler.get_log_prob(discard=burn_in, thin=thin, flat=True)
     
     if verbose:
-        print(f"Final samples: {flat_samples.shape[0]} (from {n_steps * n_walkers} total)")
+        logger.info(f"Final samples: {flat_samples.shape[0]} (from {n_steps * n_walkers} total)")
     
     # 4. Remove outliers (optional but helpful for visualization)
     # Keep only samples within 99.9% of log probability range
@@ -165,7 +168,7 @@ def get_clean_samples(sampler, param_names, verbose=True):
     if verbose:
         n_removed = np.sum(~good_samples)
         if n_removed > 0:
-            print(f"Removed {n_removed} outlier samples")
+            logger.info(f"Removed {n_removed} outlier samples")
     
     return flat_samples[good_samples]
 

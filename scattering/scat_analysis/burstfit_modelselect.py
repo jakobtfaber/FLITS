@@ -38,6 +38,7 @@ This allows re‑running a longer chain after selecting the best model.
 from __future__ import annotations
 
 from typing import Dict, Sequence, Tuple
+import logging
 
 import numpy as np
 from numpy.typing import NDArray
@@ -51,6 +52,9 @@ from .burstfit import (
 )
 
 __all__ = ["fit_models_bic"]
+
+# Initialize logger for this module
+logger = logging.getLogger(__name__)
 
 _PARAM_KEYS = {
     "M0": ("c0", "t0", "gamma"),
@@ -109,8 +113,8 @@ def fit_models_bic(
                                k=len(_PARAM_KEYS[key]),
                                n=n_obs)
         results[key] = (sampler, bic_val, logL_max)
-        print(f"[Model {key}]  logL_max = {logL_max:9.1f} | BIC = {bic_val:9.1f}")
+        logger.info(f"[Model {key}]  logL_max = {logL_max:9.1f} | BIC = {bic_val:9.1f}")
 
     best_key = min(results, key=lambda k: results[k][1])
-    print(f"\n→ Best model by BIC: {best_key}")
+    logger.info(f"\n→ Best model by BIC: {best_key}")
     return best_key, results
