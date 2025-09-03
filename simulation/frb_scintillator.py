@@ -37,12 +37,15 @@ from astropy.cosmology import Planck18 as cosmo
 from scipy.optimize import curve_fit
 from scipy.signal import firwin
 
+# Initialize logger for this module
+logger = logging.getLogger(__name__)
+
 try:
     import numba as nb
     _NUMBA = True
-    print("Numba detected. Using JIT-accelerated version.")
+    logger.info("Numba detected. Using JIT-accelerated version.")
 except ModuleNotFoundError:
-    print("Numba not found, using pure Python loops.")
+    logger.info("Numba not found, using pure Python loops.")
     _NUMBA = False
 
 try:
@@ -714,7 +717,7 @@ class FRBScintillator:
         E_int_nu = self._get_intrinsic_pulse_freq_domain(rng)
 
         # 3. Loop over time to calculate the time-variable IRF spectrum, R(t, ν)
-        print("Running True 2D Engine (this may take a while)...")
+        logger.info("Running True 2D Engine (this may take a while)...")
         # Array to store the noise-free E-field spectrum at each time step
         E_signal_t_nu = np.zeros((num_time_steps, self.n_chan), dtype=np.complex128)
 
@@ -771,7 +774,7 @@ class FRBScintillator:
             R_nu = self._irf_coherent_vs_freq(total_delay)
             return R_nu * E_int_nu
 
-        print("Running Parallel True 2D Engine...")
+        logger.info("Running Parallel True 2D Engine...")
         # Use joblib.Parallel to run the loop across multiple CPUs
         # n_jobs=-1 uses all available cores.
         E_signal_t_nu_list = Parallel(n_jobs=-1)(
@@ -953,7 +956,7 @@ class FRBScintillator:
             "time_ms": [], "m_total": [], "nu_s_mw_hz": [], "nu_s_host_hz": []
         }
         
-        print("Analyzing scintillation evolution across the pulse...")
+        logger.info("Analyzing scintillation evolution across the pulse...")
         for i in trange(num_spectra, desc="Analyzing time slices"):
             spectrum_slice = I_t_nu[i, :]
             

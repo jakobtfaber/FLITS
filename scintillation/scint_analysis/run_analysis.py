@@ -7,6 +7,9 @@ import json
 import numpy as np
 from scint_analysis import config, pipeline, plotting
 
+# Initialize logger for this module
+logger = logging.getLogger(__name__)
+
 class NumpyJSONEncoder(json.JSONEncoder):
     """
     Custom JSON encoder for NumPy data types.
@@ -34,7 +37,7 @@ def main():
     try:
         loaded_config = config.load_config(args.burst_config_path)
     except Exception as e:
-        print(f"Error: Could not load configuration. {e}")
+        logger.error(f"Could not load configuration. {e}")
         return
 
     # 3. Set up Logging

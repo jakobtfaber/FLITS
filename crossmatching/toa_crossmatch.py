@@ -3,6 +3,7 @@ import astropy.units as u
 from astropy.time import Time
 from astropy.coordinates import SkyCoord, EarthLocation
 import astropy.constants as const
+import logging
 
 # Assume these are defined elsewhere in your script
 # from baseband_analysis.core.bbdata import BBData
@@ -10,6 +11,9 @@ import astropy.constants as const
 
 # Dispersion constant in MHz^2 pc^-1 cm^3 s
 K_DM = 4.148808e3
+
+# Initialize logger for this module
+logger = logging.getLogger(__name__)
 
 def calculate_dm_timing_error(dm_uncertainty, f_obs, f_ref):
     """
@@ -44,7 +48,7 @@ dsa_mjd = 59000.1
 chime_unix_timestamp = 1598882400.0 # Example Unix time
 source_coord = "12:00:00 +20:00:00"
 
-print("--- Analyzing Single Burst ---")
+logger.info("--- Analyzing Single Burst ---")
 
 # ==================================================================
 # This section would contain your CHIME data processing code
@@ -86,7 +90,7 @@ shift_400_dsa = K_DM * DM.value * (1/F_REF.value**2 - 1/f_center_dsa.value**2) *
 toa_400_utc_dsa = t_peak_utc_dsa + shift_400_dsa
 
 # --- UNCERTAINTY CALCULATION ---
-print(f"Assumed DM Uncertainty: {dm_uncertainty:.2f} pc/cm^3")
+logger.info(f"Assumed DM Uncertainty: {dm_uncertainty:.2f} pc/cm^3")
 
 # Calculate timing error for each observatory relative to the 400 MHz reference
 error_chime = calculate_dm_timing_error(dm_uncertainty, f_center_chime, F_REF)
@@ -95,13 +99,13 @@ error_dsa = calculate_dm_timing_error(dm_uncertainty, f_center_dsa, F_REF)
 # The total uncertainty on the offset is the sum in quadrature
 delta_t_uncertainty = np.sqrt(error_chime**2 + error_dsa**2)
 
-print(f"CHIME TOA Error due to DM uncertainty: {error_chime:.3f}")
-print(f"DSA-110 TOA Error due to DM uncertainty: {error_dsa:.3f}")
+logger.info(f"CHIME TOA Error due to DM uncertainty: {error_chime:.3f}")
+logger.info(f"DSA-110 TOA Error due to DM uncertainty: {error_dsa:.3f}")
 
 # --- Final Results ---
 dt = toa_400_utc_chime - toa_400_utc_dsa
-print(f"\nMeasured TOA Offset (Δt): {dt.to(u.ms):.3f}")
-print(f"Combined Uncertainty on Δt from DM: ±{delta_t_uncertainty:.3f}")
+logger.info(f"\nMeasured TOA Offset (Δt): {dt.to(u.ms):.3f}")
+logger.info(f"Combined Uncertainty on Δt from DM: ±{delta_t_uncertainty:.3f}")
 
 # Geometric delay calculation
 src = SkyCoord(source_coord, unit=(u.hourangle, u.deg), frame='icrs')
@@ -114,4 +118,4 @@ def geometric_delay(t):
     proj = (p2 - p1).dot(src.cartesian.xyz)
     return (proj / const.c).to(u.ms)
 
-print(f"Geometric Delay: {geometric_delay(toa_400_utc_chime):.3f}")
+logger.info(f"Geometric Delay: {geometric_delay(toa_400_utc_chime):.3f}")

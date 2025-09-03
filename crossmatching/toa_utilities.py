@@ -1,6 +1,8 @@
 import importlib
 import numpy as np
 from scipy.signal import savgol_filter
+import logging
+import json
 
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
@@ -17,6 +19,9 @@ rcParams['axes.formatter.use_mathtext'] = True
 rcParams['axes.unicode_minus'] = True
 rcParams['mathtext.fontset'] = 'cm'
 #rcParams['text.usetex'] = True
+
+# Initialize logger for this module
+logger = logging.getLogger(__name__)
 
 import astropy.units as u
 import astropy.constants as const
@@ -137,7 +142,7 @@ def measure_fwhm(timeseries, time_resolution, t_factor):
         
         # Check if pulse is truncated at the start or end of the window
         if above_indices[0] == 0 or above_indices[-1] == len(timeseries) - 1:
-            print("Warning: Pulse may be truncated. FWHM could be inaccurate.")
+            logger.warning("Pulse may be truncated. FWHM could be inaccurate.")
             # Fallback to the simple method for truncated pulses
             width_in_bins = len(above_indices)
             return width_in_bins * time_resolution
@@ -170,11 +175,11 @@ def measure_fwhm(timeseries, time_resolution, t_factor):
 
     except IndexError:
         # This can happen if the pulse is right at the edge (e.g., peak is the last bin).
-        print("Could not measure FWHM: Pulse is at the edge of the time window.")
+        logger.error("Could not measure FWHM: Pulse is at the edge of the time window.")
         return np.nan
     except Exception as e:
         # Catch any other unexpected errors
-        print(f"An unexpected error occurred during FWHM measurement: {e}")
+        logger.error(f"An unexpected error occurred during FWHM measurement: {e}")
         return np.nan
 
 def calculate_dm_timing_error(dDM, f_obs, f_ref, K_DM = 4.148808e3):
@@ -238,14 +243,14 @@ def append_to_json(new_data_dict, filename):
                 data_list = json.load(f)
             # Ensure the loaded data is a list
             if not isinstance(data_list, list):
-                print(f"Error: JSON file '{filename}' does not contain a list.")
+                logger.error(f"JSON file '{filename}' does not contain a list.")
                 # Start with a new list containing the new data
                 data_list = [clean_new_data]
             else:
                 # Append the new dictionary
                 data_list.append(clean_new_data)
         except json.JSONDecodeError:
-            print(f"Warning: Could not decode JSON from '{filename}'. Starting a new file.")
+            logger.warning(f"Could not decode JSON from '{filename}'. Starting a new file.")
             data_list = [clean_new_data]
     else:
         # If the file doesn't exist or is empty, start a new list
@@ -255,5 +260,5 @@ def append_to_json(new_data_dict, filename):
     with open(filename, 'w') as f:
         json.dump(data_list, f, indent=4)
         
-    print(f"Successfully appended data to {filename}")
+    logger.info(f"Successfully appended data to {filename}")
 

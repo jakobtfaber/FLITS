@@ -226,7 +226,7 @@ class DynamicSpectrum:
         power_ds = np.ma.mean(power_for_stats.reshape(self.num_channels, -1, ds_factor), axis=2)
 
         manual_window = rfi_config.get('manual_burst_window')
-        print(f"Manual window set to {manual_window}")
+        log.info(f"Manual window set to {manual_window}")
         if manual_window and len(manual_window) == 2:
             burst_lims = manual_window
             log.info(f"RFI MASKING: Using manually specified on-pulse window: {burst_lims}")
