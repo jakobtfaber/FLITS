@@ -12,10 +12,15 @@ from . import analysis, core, noise, plotting
 log = logging.getLogger(__name__)
 
 class ScintillationAnalysis:
+    """Controller for the end-to-end scintillation analysis pipeline.
+
+    Parameters
+    ----------
+    config : dict
+        Configuration dictionary controlling all processing stages.
     """
-    An object-oriented controller for running the end-to-end scintillation pipeline.
-    """
-    def __init__(self, config):
+
+    def __init__(self, config: dict):
         self.config = config
         self.masked_spectrum = None
         self.noise_descriptor = None
@@ -31,13 +36,34 @@ class ScintillationAnalysis:
             os.makedirs(self.cache_dir, exist_ok=True)
             log.info(f"Intermediate results will be cached in: {self.cache_dir}")
 
-    def _get_cache_path(self, stage_name):
-        """Generates a standard path for a cache file."""
+    def _get_cache_path(self, stage_name: str) -> str:
+        """Return the canonical cache filename for a pipeline stage.
+
+        Parameters
+        ----------
+        stage_name : str
+            Short identifier for the processing stage.
+
+        Returns
+        -------
+        str
+            Absolute path to the cache file within ``cache_dir``.
+        """
         burst_id = self.config.get('burst_id', 'unknown_burst')
         return os.path.join(self.cache_dir, f"{burst_id}_{stage_name}.pkl")
         
     def _create_diagnostic_plots(self, burst_lims, off_pulse_lims, baseline_info=None):
-        """Internal helper to generate and save diagnostic plots."""
+        """Generate and save diagnostic plots for key processing stages.
+
+        Parameters
+        ----------
+        burst_lims : tuple
+            Start and stop indices of the on-pulse window.
+        off_pulse_lims : tuple
+            Start and stop indices of the off-pulse (noise) window.
+        baseline_info : dict, optional
+            Cached information about the baseline fit, if available.
+        """
         diag_config = self.config.get('pipeline_options', {}).get('diagnostic_plots', {})
         if not diag_config.get('enable', False):
             return
@@ -94,9 +120,10 @@ class ScintillationAnalysis:
             )
 
     def prepare_data(self):
-        """
-        Loads data from file and performs initial RFI masking.
-        Populates self.masked_spectrum.
+        """Load data from disk and perform initial RFI masking.
+
+        Upon completion ``self.masked_spectrum`` holds the cleaned dynamic
+        spectrum.
         """
         if self.data_prepared:
             log.info("Data already prepared. Skipping.")
@@ -140,8 +167,12 @@ class ScintillationAnalysis:
         log.info("--- Data Preparation Finished ---")
 
     def run(self):
-        """
-        Executes the full scintillation analysis pipeline from start to finish.
+        """Execute the full scintillation analysis pipeline.
+
+        Returns
+        -------
+        None
+            Results are stored on the instance for later access.
         """
         self.prepare_data() # Ensures data is loaded
 

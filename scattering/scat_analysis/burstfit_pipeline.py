@@ -62,7 +62,25 @@ def create_four_panel_plot(
     save: bool = True,
     show: bool = True
 ):
-    """Creates a four-panel diagnostic plot comparing data, model, and residuals."""
+    """Generate a four-panel diagnostic plot.
+
+    Parameters
+    ----------
+    dataset : BurstDataset
+        Loaded burst data and metadata.
+    results : dict
+        Output dictionary from :class:`BurstPipeline` containing model and
+        fitting results.
+    save : bool, optional
+        If ``True``, save the plot alongside the dataset output path.
+    show : bool, optional
+        If ``True``, display the figure to the screen.
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+        Handle to the created figure.
+    """
     log.info("Generating four-panel diagnostic plot...")
     
     best_p, best_key = results["best_params"], results["best_key"]
@@ -355,18 +373,31 @@ class BurstDiagnostics:
 # 3. PIPELINE FAÇADE
 ###############################################################################
 class BurstPipeline:
-    """Main orchestrator for the fitting pipeline."""
-    def __init__(self, inpath: str | Path, outpath: str | Path, name: str, *, dm_init: float = 0.0, **kwargs):
-        """
-        Initializes the pipeline.
+    """Main orchestrator for the scattering fitting pipeline."""
 
-        Args:
-            name: FRB name
-            inpath: Path to the input .npy data file.
-            outpath: Path to the output files.
-            dm_init: Initial dispersion measure for the data.
-            **kwargs: Keyword arguments for pipeline configuration. These are
-                      intelligently split between BurstDataset and the pipeline.
+    def __init__(
+        self,
+        inpath: str | Path,
+        outpath: str | Path,
+        name: str,
+        *,
+        dm_init: float = 0.0,
+        **kwargs: Any,
+    ):
+        """Initialise a pipeline instance.
+
+        Parameters
+        ----------
+        inpath : str or pathlib.Path
+            Path to the input ``.npy`` data file.
+        outpath : str or pathlib.Path
+            Directory where output products should be written.
+        name : str
+            Identifier for the burst being analysed.
+        dm_init : float, optional
+            Initial dispersion measure to seed the model, by default ``0``.
+        **kwargs : Any
+            Additional configuration keywords passed to the dataset or pipeline.
         """
         self.inpath = inpath
         self.outpath = outpath
@@ -391,8 +422,40 @@ class BurstPipeline:
             auto_ok=self.pipeline_kwargs.get("yes", False)
         )
 
-    def run_full(self, model_scan=True, diagnostics=True, plot=True, save=True, show=True, model_keys=("M0","M1","M2","M3"), **kwargs):
-        """Main pipeline execution flow."""
+    def run_full(
+        self,
+        model_scan: bool = True,
+        diagnostics: bool = True,
+        plot: bool = True,
+        save: bool = True,
+        show: bool = True,
+        model_keys=("M0", "M1", "M2", "M3"),
+        **kwargs: Any,
+    ):
+        """Execute the full fitting pipeline.
+
+        Parameters
+        ----------
+        model_scan : bool, optional
+            If ``True`` perform model selection using BIC before fitting.
+        diagnostics : bool, optional
+            Generate additional diagnostic plots and statistics.
+        plot : bool, optional
+            Whether to create summary plots of the fit results.
+        save : bool, optional
+            If ``True`` write generated plots to disk.
+        show : bool, optional
+            Display plots interactively using ``matplotlib``.
+        model_keys : tuple of str, optional
+            Candidate model identifiers to scan.
+        **kwargs : Any
+            Extra keyword arguments forwarded to internal routines.
+
+        Returns
+        -------
+        dict
+            Dictionary containing sampling results and diagnostics.
+        """
         with self.pool or contextlib.nullcontext(self.pool) as pool:
             # --- FIX: Use the filtered kwargs to instantiate BurstDataset ---
             self.dataset = BurstDataset(self.inpath, self.outpath, **self.dataset_kwargs)
@@ -455,6 +518,18 @@ class BurstPipeline:
             return results
 
     def _get_initial_guess(self, model: "FRBModel") -> "FRBParams":
+        """Derive a starting point for the MCMC sampler.
+
+        Parameters
+        ----------
+        model : FRBModel
+            Model instance containing the dynamic spectrum.
+
+        Returns
+        -------
+        FRBParams
+            Parameter set providing a reasonable initial guess for fitting.
+        """
         log.info("Finding initial guess for MCMC...")
         f_ds = 1 #getattr(self, "f_factor", self.f_factor)
         t_ds = 1 #getattr(self, "init_t_factor", self.t_factor)

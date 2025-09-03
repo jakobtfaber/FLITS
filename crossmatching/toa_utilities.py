@@ -96,24 +96,26 @@ def downsample_time(data, t_factor):
 
 
 def measure_fwhm(timeseries, time_resolution, t_factor):
-    """
-    Measures the Full Width at Half Maximum (FWHM) of a pulse.
+    """Measure the Full Width at Half Maximum (FWHM) of a pulse.
 
-    This function assumes the timeseries has had its baseline subtracted
-    (i.e., the noise level is around zero).
+    The input ``timeseries`` is assumed to have had its baseline
+    subtracted so that the noise level is centred around zero.
 
     Parameters
     ----------
-    timeseries : np.ndarray
-        A 1D array representing the time series of the pulse.
+    timeseries : numpy.ndarray
+        One-dimensional array representing the pulse profile.
     time_resolution : float
-        The time duration of a single bin/sample in the timeseries (e.g., in ms).
+        Duration of a single sample in the time series, in the same
+        units as the desired FWHM.
+    t_factor : int
+        Integer down-sampling factor applied before measuring the width.
 
     Returns
     -------
     float
-        The FWHM of the pulse in the same units as time_resolution.
-        Returns np.nan if the FWHM cannot be determined.
+        Estimated FWHM of the pulse in the units of ``time_resolution``.
+        Returns ``numpy.nan`` if the measurement cannot be determined.
     """
     try:
         # Downsample the timeseries
@@ -202,9 +204,19 @@ def calculate_dm_timing_error(dDM, f_obs, f_ref, K_DM = 4.148808e3):
     return np.abs(time_shift.to(u.ms))
 
 def clean_and_serialize_dict(burst_dict):
-    """
-    Converts a dictionary containing astropy objects into a
-    JSON-serializable dictionary.
+    """Convert a dictionary with Astropy objects into basic Python types.
+
+    Parameters
+    ----------
+    burst_dict : dict
+        Dictionary that may contain :class:`astropy.units.Quantity` or
+        :class:`astropy.time.Time` instances.
+
+    Returns
+    -------
+    dict
+        A new dictionary with any Astropy objects converted to plain
+        serialisable Python types.
     """
     clean_dict = {}
     for key, value in burst_dict.items():
@@ -224,9 +236,14 @@ def append_to_json(new_data_dict, filename):
     Parameters
     ----------
     new_data_dict : dict
-        The new dictionary to append. It can contain astropy objects.
+        The new dictionary to append. It can contain Astropy objects.
     filename : str
-        The path to the JSON file.
+        Path to the JSON file.
+
+    Returns
+    -------
+    None
+        The file on disk is updated in-place.
     """
     # First, clean the new data to make it serializable
     clean_new_data = clean_and_serialize_dict(new_data_dict)
