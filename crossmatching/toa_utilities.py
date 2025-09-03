@@ -43,56 +43,7 @@ from baseband_analysis.core.dedispersion import incoherent_dedisp, coherent_dedi
 from numpy.typing import NDArray
 import numpy as np
 
-def downsample_time(data, t_factor):
-    """
-    Block-average by integer factor along the time axis.
-    
-    Works on either
-      • 1D array of shape (ntime,)
-      • 2D array of shape (nfreq, ntime)
-    
-    Parameters
-    ----------
-    data
-        Input time series or spectrogram.
-    t_factor
-        Integer factor ≥1 by which to downsample time.
-    
-    Returns
-    -------
-    downsampled
-        If input is 1D of length nt, returns 1D of length floor(nt/t_factor).
-        If input is 2D (nf, nt), returns 2D of shape (nf, floor(nt/t_factor)).
-    
-    Raises
-    ------
-    ValueError
-        If `t_factor < 1` or input is not 1D/2D.
-    """
-    if t_factor < 1:
-        raise ValueError(f"t_factor must be ≥1, got {t_factor}")
-    
-    arr = np.asarray(data)
-    
-    # Handle 1D time series
-    if arr.ndim == 1:
-        nt = arr.shape[0]
-        nt_trim = nt - (nt % t_factor)
-        # reshape into (ntime_out, t_factor) then average
-        return arr[:nt_trim].reshape(nt_trim // t_factor, t_factor).mean(axis=1)
-    
-    # Handle 2D spectrogram-like input
-    elif arr.ndim == 2:
-        nfreq, nt = arr.shape
-        nt_trim = nt - (nt % t_factor)
-        # reshape into (nfreq, ntime_out, t_factor) then average over last axis
-        blocks = arr[:, :nt_trim].reshape(nfreq, nt_trim // t_factor, t_factor)
-        return blocks.mean(axis=2)
-    
-    else:
-        raise ValueError(
-            f"Unsupported array shape {arr.shape}; expected 1D or 2D."
-        )
+from flits.signal.processing import downsample, subtract_baseline
 
 
 def measure_fwhm(timeseries, time_resolution, t_factor):
@@ -116,9 +67,12 @@ def measure_fwhm(timeseries, time_resolution, t_factor):
         Returns np.nan if the FWHM cannot be determined.
     """
     try:
+        # Ensure a zero baseline before measuring width
+        timeseries = subtract_baseline(timeseries)
+
         # Downsample the timeseries
-        timeseries = downsample_time(timeseries, t_factor = t_factor)
-        time_resoution = time_resolution * t_factor
+        timeseries = downsample(timeseries, t_factor=t_factor)
+        time_resolution = time_resolution * t_factor
         
         # Find the peak value and its index
         peak_val = np.max(timeseries)

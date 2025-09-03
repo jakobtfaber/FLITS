@@ -27,6 +27,8 @@ import numpy as np
 from numpy.typing import NDArray
 from scipy.signal import fftconvolve
 
+from flits.signal.processing import downsample, subtract_baseline
+
 __all__ = [
     "FRBParams",
     "FRBModel",
@@ -360,18 +362,7 @@ def compute_bic(logL_max: float, k: int, n: int) -> float:
     """Bayesian Information Criterion (lower = preferred)."""
     return -2.0 * logL_max + k * np.log(n)
 
-def downsample(data: NDArray[np.floating], f_factor=1, t_factor=1):
-    """Block-average by integer factors along (freq, time)."""
-    if f_factor == 1 and t_factor == 1:
-        return data
-    nf, nt = data.shape
-    # Ensure dimensions are divisible by factors
-    nf_new = nf - (nf % f_factor)
-    nt_new = nt - (nt % t_factor)
-    d = data[:nf_new, :nt_new].reshape(
-        nf_new // f_factor, f_factor, nt_new // t_factor, t_factor
-    )
-    return d.mean(axis=(1, 3))
+# ``downsample`` is re-exported from :mod:`flits.signal.processing`.
 
 def goodness_of_fit(data: NDArray[np.floating],
                    model: NDArray[np.floating],
@@ -386,7 +377,7 @@ def goodness_of_fit(data: NDArray[np.floating],
     chi2_reduced = chi2 / ndof if ndof > 0 else np.inf
 
     residual_profile = np.sum(residual, axis=0)
-    residual_profile -= np.mean(residual_profile)
+    residual_profile = subtract_baseline(residual_profile)
     
     autocorr = np.correlate(residual_profile, residual_profile, mode='same')
     center_val = autocorr[len(autocorr)//2]

@@ -10,6 +10,8 @@ from scipy.stats import median_abs_deviation
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
+from flits.signal.processing import downsample, subtract_baseline
+
 # Set up a logger for this module
 log = logging.getLogger(__name__)
 
@@ -112,10 +114,7 @@ class DynamicSpectrum:
         nt_new = nt - (nt % t_factor)
 
         # ── power (masked) ─────────────────────────────────────────────────────────
-        reshaped  = self.power[:nf_new, :nt_new].reshape(
-            nf_new // f_factor, f_factor, nt_new // t_factor, t_factor
-        )
-        new_power = np.ma.mean(reshaped, axis=(1, 3))     # keep mask!
+        new_power = downsample(self.power, t_factor=t_factor, f_factor=f_factor)
 
         # ── axes ───────────────────────────────────────────────────────────────────
         new_freqs = self.frequencies[:nf_new].reshape(-1, f_factor).mean(axis=1)
@@ -340,9 +339,10 @@ class DynamicSpectrum:
         baseline_model = np.poly1d(coeffs)(self.frequencies)
         
         # Subtract this 1D baseline model from the entire 2D data block.
-        # NumPy broadcasting subtracts the 1D array from every column (each time step).
-        new_power_data = self.power.data - baseline_model[:, np.newaxis]
-        
+        new_power_data = subtract_baseline(
+            self.power.data, baseline_model[:, np.newaxis]
+        )
+
         # Create the new object, preserving the original RFI mask
         new_power = np.ma.MaskedArray(new_power_data, mask=self.power.mask)
         

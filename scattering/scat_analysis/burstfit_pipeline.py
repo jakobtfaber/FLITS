@@ -25,6 +25,7 @@ import scipy as sp
 from scipy.ndimage import gaussian_filter1d
 from scipy.optimize import minimize
 
+from flits.signal.processing import downsample, subtract_baseline
 from .burstfit import (
     FRBModel,
     FRBFitter,
@@ -32,7 +33,6 @@ from .burstfit import (
     build_priors,
     plot_dynamic,
     goodness_of_fit,
-    downsample,
 )
 from .burstfit_modelselect import fit_models_bic
 from .burstfit_robust import (
@@ -302,9 +302,10 @@ class BurstDataset:
     def _bandpass_correct(self, arr, time_axis):
         q = time_axis.size // 4; off_pulse_idx = np.r_[0:q, -q:0]
         mu = np.nanmean(arr[:, off_pulse_idx], axis=1, keepdims=True)
-        sig = np.nanstd(arr[:, off_pulse_idx], axis=1, keepdims=True)
+        arr_zero = subtract_baseline(arr, baseline=mu)
+        sig = np.nanstd(arr_zero[:, off_pulse_idx], axis=1, keepdims=True)
         sig[sig < 1e-9] = np.nan
-        return np.nan_to_num((arr - mu) / sig, nan=0.0)
+        return np.nan_to_num(arr_zero / sig, nan=0.0)
 
     def _trim_buffer(self, arr):
         n_trim = int(self.outer_trim * arr.shape[1])
