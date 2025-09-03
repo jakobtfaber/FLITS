@@ -46,7 +46,7 @@ def downsample_time(data: NDArray[np.floating], t_factor: int) -> NDArray[np.flo
         return arr[:nt_trim].reshape(nt_trim // t_factor, t_factor).mean(axis=1)
 
     # Handle 2D spectrogram-like input
-    if arr.ndim == 2:
+    elif arr.ndim == 2:
         nfreq, nt = arr.shape
         nt_trim = nt - (nt % t_factor)
         # reshape into (nfreq, ntime_out, t_factor) then average over last axis
