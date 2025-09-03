@@ -6,37 +6,18 @@ from astropy.time import Time
 from astropy.coordinates import SkyCoord, EarthLocation
 import astropy.constants as const
 
+# Handle both relative and absolute imports
+try:
+    from .toa_utilities import calculate_dm_timing_error
+except ImportError:
+    from toa_utilities import calculate_dm_timing_error
+
 # Assume these are defined elsewhere in your script
 # from baseband_analysis.core.bbdata import BBData
 # from baseband_analysis.core.dedispersion import delay_across_the_band
 
 # Dispersion constant in MHz^2 pc^-1 cm^3 s
 K_DM = 4.148808e3
-
-def calculate_dm_timing_error(dm_uncertainty, f_obs, f_ref):
-    """
-    Calculates the timing error due to DM uncertainty.
-
-    Parameters
-    ----------
-    dm_uncertainty : float
-        The uncertainty in the Dispersion Measure (pc/cm^3).
-    f_obs : astropy.units.Quantity
-        The central observing frequency in MHz.
-    f_ref : astropy.units.Quantity
-        The reference frequency in MHz.
-
-    Returns
-    -------
-    astropy.units.Quantity
-        The timing error in milliseconds.
-    """
-    # Calculate the time shift in seconds
-    time_shift = K_DM * dm_uncertainty * (1 / f_obs.value**2 - 1 / f_ref.value**2) * u.s
-    
-    # Return the absolute value in milliseconds
-    return np.abs(time_shift.to(u.ms))
-
 
 def compute_toa(t0, offset, f_center, DM, f_ref):
     """Compute a time of arrival referenced to a frequency.

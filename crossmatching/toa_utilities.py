@@ -1,5 +1,7 @@
 import importlib
 import numpy as np
+import os
+import json
 from scipy.signal import savgol_filter
 
 import matplotlib.pyplot as plt
@@ -28,15 +30,17 @@ from astropy.visualization import wcsaxes
 from astropy.wcs import WCS
 from astropy.coordinates import AltAz
 from astropy.coordinates import SkyOffsetFrame
-import astropy.constants as const
 from astropy.table import Table
 
-# Assume these are defined elsewhere in your script
-from baseband_analysis.core.bbdata import BBData
-from baseband_analysis.core.dedispersion import delay_across_the_band
-from baseband_analysis.core.bbdata import BBData
-from baseband_analysis.analysis.snr import get_snr
-from baseband_analysis.core.dedispersion import incoherent_dedisp, coherent_dedisp, get_freq
+# Optional imports - baseband_analysis may not be available
+try:
+    from baseband_analysis.core.bbdata import BBData
+    from baseband_analysis.core.dedispersion import delay_across_the_band
+    from baseband_analysis.analysis.snr import get_snr
+    from baseband_analysis.core.dedispersion import incoherent_dedisp, coherent_dedisp, get_freq
+    BASEBAND_AVAILABLE = True
+except ImportError:
+    BASEBAND_AVAILABLE = False
 
 # Dispersion constant in MHz^2 pc^-1 cm^3 s
 
@@ -118,7 +122,7 @@ def measure_fwhm(timeseries, time_resolution, t_factor):
     try:
         # Downsample the timeseries
         timeseries = downsample_time(timeseries, t_factor = t_factor)
-        time_resoution = time_resolution * t_factor
+        time_resolution = time_resolution * t_factor
         
         # Find the peak value and its index
         peak_val = np.max(timeseries)
