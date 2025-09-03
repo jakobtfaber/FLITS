@@ -1,7 +1,7 @@
 import numpy as np
 import pathlib, sys
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[1] / 'scintillation' / 'scint_analysis'))
-from core import DynamicSpectrum
+# sys.path.append(str(pathlib.Path(__file__).resolve().parents[1] / 'scintillation' / 'scint_analysis'))
+from scintillation.scint_analysis.core import DynamicSpectrum
 
 
 def test_rfi_masking_flags_outliers():
