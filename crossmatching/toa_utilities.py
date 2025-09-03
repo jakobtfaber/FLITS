@@ -87,14 +87,14 @@ def measure_fwhm(
     try:
         # Downsample the timeseries
         timeseries = downsample_time(timeseries, t_factor=t_factor)
-        time_resoution = time_resolution * t_factor
+        time_resolution = time_resolution * t_factor
         
         # Find the peak value and its index
         peak_val = np.max(timeseries)
         peak_idx = np.argmax(timeseries)
 
         # Calculate the half maximum value
-        half_max = peak_val / 2.5
+        half_max = peak_val / 2
 
         # Find all indices where the timeseries is greater than half max
         above_indices = np.where(timeseries > half_max)[0]
