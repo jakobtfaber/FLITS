@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 from typing import Any, Dict
 
@@ -11,6 +12,8 @@ import astropy.units as u
 from astropy.time import Time
 
 from .constants import K_DM
+
+logger = logging.getLogger(__name__)
 
 
 def downsample_time(data, t_factor):
@@ -58,15 +61,15 @@ def append_to_json(new_data_dict: Dict[str, Any], filename: str) -> None:
             with open(filename, "r") as f:
                 data_list = json.load(f)
             if not isinstance(data_list, list):
-                print(f"Error: JSON file '{filename}' does not contain a list.")
+                logger.error(f"JSON file '{filename}' does not contain a list.")
                 data_list = [clean_new_data]
             else:
                 data_list.append(clean_new_data)
         except json.JSONDecodeError:
-            print(f"Warning: Could not decode JSON from '{filename}'. Starting a new file.")
+            logger.warning(f"Could not decode JSON from '{filename}'. Starting a new file.")
             data_list = [clean_new_data]
     else:
         data_list = [clean_new_data]
     with open(filename, "w") as f:
         json.dump(data_list, f, indent=4)
-    print(f"Successfully appended data to {filename}")
+    logger.info(f"Successfully appended data to {filename}")
