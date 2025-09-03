@@ -104,7 +104,7 @@ logger.info("DSA-110 TOA Error due to DM uncertainty: %s", error_dsa)
 
 # --- Final Results ---
 dt = toa_400_utc_chime - toa_400_utc_dsa
-logger.info("\nMeasured TOA Offset (Δt): %s", dt.to(u.ms))
+logger.info("Measured TOA Offset (Δt): %s", dt.to(u.ms))
 logger.info("Combined Uncertainty on Δt from DM: ±%s", delta_t_uncertainty)
 
 # Geometric delay calculation
