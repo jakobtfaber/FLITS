@@ -357,3 +357,4 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 *.pkl
+flits/
