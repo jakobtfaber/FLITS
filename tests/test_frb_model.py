@@ -1,6 +1,4 @@
 import numpy as np
-import pathlib, sys
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[1] / 'scattering' / 'scat_analysis'))
 from burstfit import FRBModel, FRBParams
 
 
