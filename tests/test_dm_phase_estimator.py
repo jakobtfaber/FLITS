@@ -1,9 +1,7 @@
 import numpy as np
-import pathlib, sys
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[1] / 'dispersion'))
-from dmphasev2 import DMPhaseEstimator
 
 
+from dispersion.dmphasev2 import DMPhaseEstimator
 def test_dm_phase_estimator_recovers_zero_dm():
     n_t, n_ch = 128, 16
     dt = 0.001
