@@ -5,7 +5,7 @@ import argparse
 import logging
 import json
 import numpy as np
-from scint_analysis import config, pipeline, plotting
+from . import config, pipeline, plotting
 
 class NumpyJSONEncoder(json.JSONEncoder):
     """

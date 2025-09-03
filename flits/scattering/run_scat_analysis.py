@@ -20,21 +20,12 @@ import yaml
 from pathlib import Path
 import matplotlib.pyplot as plt
 
-# --- Ensure the project's root directory is in the Python path ---
-# This allows the script to be run from anywhere and still find the scat_analysis module.
-# It assumes this script is in the project root, and the package is in 'scat_analysis/'.
-try:
-    from scat_analysis.burstfit_pipeline import BurstPipeline
-    from scat_analysis.burstfit_corner import (
-        quick_chain_check,
-        get_clean_samples,
-        make_beautiful_corner
-    )
-except ImportError:
-    print("Error: Could not import the 'scat_analysis' package.")
-    print("Please ensure this script is in the project's root directory,")
-    print("or add the project root to your PYTHONPATH.")
-    sys.exit(1)
+from .scat_analysis.burstfit_pipeline import BurstPipeline
+from .scat_analysis.burstfit_corner import (
+    quick_chain_check,
+    get_clean_samples,
+    make_beautiful_corner,
+)
 
 
 def main():
