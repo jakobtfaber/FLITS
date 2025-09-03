@@ -1,5 +1,3 @@
-import pathlib, sys
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[1] / 'scattering' / 'scat_analysis'))
 from config_utils import load_telescope_block, clear_config_cache
 
 def test_load_telescope_block_and_cache(tmp_path):
