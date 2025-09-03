@@ -1,123 +1,92 @@
-import importlib
+from __future__ import annotations
+
+import json
+import os
+from typing import Any
+
 import numpy as np
-from scipy.signal import savgol_filter
-
-import matplotlib.pyplot as plt
-from matplotlib import rcParams
-from matplotlib.colors import LogNorm
-from matplotlib.ticker import ScalarFormatter
-import matplotlib.patches as patches
-
-from matplotlib import rcParams
-rcParams['mathtext.fontset'] = 'dejavuserif'
-rcParams['mathtext.fallback'] = 'cm'
-rcParams['font.serif'] = ['cmr10']
-rcParams['font.size'] = 24
-rcParams['axes.formatter.use_mathtext'] = True
-rcParams['axes.unicode_minus'] = True
-rcParams['mathtext.fontset'] = 'cm'
-#rcParams['text.usetex'] = True
-
-import astropy.units as u
-import astropy.constants as const
-from astropy.time import Time
-from astropy.coordinates import SkyCoord, EarthLocation
-from astropy.modeling.models import Gaussian2D
-from astropy.visualization import quantity_support
-from astropy.visualization import wcsaxes
-from astropy.wcs import WCS
-from astropy.coordinates import AltAz
-from astropy.coordinates import SkyOffsetFrame
-import astropy.constants as const
-from astropy.table import Table
-
-# Assume these are defined elsewhere in your script
-from baseband_analysis.core.bbdata import BBData
-from baseband_analysis.core.dedispersion import delay_across_the_band
-from baseband_analysis.core.bbdata import BBData
-from baseband_analysis.analysis.snr import get_snr
-from baseband_analysis.core.dedispersion import incoherent_dedisp, coherent_dedisp, get_freq
-
-# Dispersion constant in MHz^2 pc^-1 cm^3 s
-
 from numpy.typing import NDArray
-import numpy as np
 
-def downsample_time(data, t_factor):
-    """
-    Block-average by integer factor along the time axis.
-    
+
+def downsample_time(data: NDArray[np.floating], t_factor: int) -> NDArray[np.floating]:
+    """Block-average by integer factor along the time axis.
+
     Works on either
-      • 1D array of shape (ntime,)
-      • 2D array of shape (nfreq, ntime)
-    
+      • 1D array of shape ``(ntime,)``
+      • 2D array of shape ``(nfreq, ntime)``
+
     Parameters
     ----------
-    data
+    data : NDArray[np.floating]
         Input time series or spectrogram.
-    t_factor
+    t_factor : int
         Integer factor ≥1 by which to downsample time.
-    
+
     Returns
     -------
-    downsampled
-        If input is 1D of length nt, returns 1D of length floor(nt/t_factor).
-        If input is 2D (nf, nt), returns 2D of shape (nf, floor(nt/t_factor)).
-    
+    NDArray[np.floating]
+    If input is 1D of length ``nt``, returns 1D of length ``floor(nt/t_factor)``.
+    If input is 2D ``(nf, nt)``, returns 2D of shape ``(nf, floor(nt/t_factor))``.
+
     Raises
     ------
     ValueError
-        If `t_factor < 1` or input is not 1D/2D.
+        If ``t_factor < 1`` or input is not 1D/2D.
     """
     if t_factor < 1:
         raise ValueError(f"t_factor must be ≥1, got {t_factor}")
-    
+
     arr = np.asarray(data)
-    
+
     # Handle 1D time series
     if arr.ndim == 1:
         nt = arr.shape[0]
         nt_trim = nt - (nt % t_factor)
         # reshape into (ntime_out, t_factor) then average
         return arr[:nt_trim].reshape(nt_trim // t_factor, t_factor).mean(axis=1)
-    
+
     # Handle 2D spectrogram-like input
-    elif arr.ndim == 2:
+    if arr.ndim == 2:
         nfreq, nt = arr.shape
         nt_trim = nt - (nt % t_factor)
         # reshape into (nfreq, ntime_out, t_factor) then average over last axis
         blocks = arr[:, :nt_trim].reshape(nfreq, nt_trim // t_factor, t_factor)
         return blocks.mean(axis=2)
-    
-    else:
-        raise ValueError(
-            f"Unsupported array shape {arr.shape}; expected 1D or 2D."
-        )
+
+    raise ValueError(
+        f"Unsupported array shape {arr.shape}; expected 1D or 2D."
+    )
 
 
-def measure_fwhm(timeseries, time_resolution, t_factor):
-    """
-    Measures the Full Width at Half Maximum (FWHM) of a pulse.
+def measure_fwhm(
+    timeseries: NDArray[np.floating],
+    time_resolution: float,
+    t_factor: int,
+) -> float:
+    """Measure the full width at half maximum (FWHM) of a pulse.
 
     This function assumes the timeseries has had its baseline subtracted
     (i.e., the noise level is around zero).
 
     Parameters
     ----------
-    timeseries : np.ndarray
+    timeseries : NDArray[np.floating]
         A 1D array representing the time series of the pulse.
     time_resolution : float
-        The time duration of a single bin/sample in the timeseries (e.g., in ms).
+        The duration of a single sample in the timeseries (e.g., in ms).
+    t_factor : int
+        Integer factor by which the timeseries is downsampled before
+        measuring the FWHM.
 
     Returns
     -------
     float
-        The FWHM of the pulse in the same units as time_resolution.
-        Returns np.nan if the FWHM cannot be determined.
+        The FWHM of the pulse in the same units as ``time_resolution``.
+        Returns ``np.nan`` if the FWHM cannot be determined.
     """
     try:
         # Downsample the timeseries
-        timeseries = downsample_time(timeseries, t_factor = t_factor)
+        timeseries = downsample_time(timeseries, t_factor=t_factor)
         time_resoution = time_resolution * t_factor
         
         # Find the peak value and its index
@@ -176,37 +145,45 @@ def measure_fwhm(timeseries, time_resolution, t_factor):
         # Catch any other unexpected errors
         print(f"An unexpected error occurred during FWHM measurement: {e}")
         return np.nan
+    
 
-def calculate_dm_timing_error(dDM, f_obs, f_ref, K_DM = 4.148808e3):
-    """
-    Calculates the timing error due to DM uncertainty.
+def calculate_dm_timing_error(
+    dDM: float,
+    f_obs: "u.Quantity",
+    f_ref: "u.Quantity",
+    K_DM: float = 4.148808e3,
+) -> "u.Quantity":
+    """Calculate the timing error due to DM uncertainty.
 
     Parameters
     ----------
     dDM : float
-        The uncertainty in the Dispersion Measure (pc/cm^3).
-    f_obs : astropy.units.Quantity
-        The central observing frequency in MHz.
-    f_ref : astropy.units.Quantity
-        The reference frequency in MHz.
+        Uncertainty in the dispersion measure (pc cm^-3).
+    f_obs, f_ref : `~astropy.units.Quantity`
+        Observing and reference frequencies in MHz.
+    K_DM : float, optional
+        Dispersion constant in MHz^2 pc^-1 cm^3 s. Defaults to ``4.148808e3``.
 
     Returns
     -------
-    astropy.units.Quantity
+    `~astropy.units.Quantity`
         The timing error in milliseconds.
     """
+    import astropy.units as u
+
     # Calculate the time shift in seconds
     time_shift = K_DM * dDM * (1 / f_obs.value**2 - 1 / f_ref.value**2) * u.s
-    
+
     # Return the absolute value in milliseconds
     return np.abs(time_shift.to(u.ms))
 
-def clean_and_serialize_dict(burst_dict):
-    """
-    Converts a dictionary containing astropy objects into a
-    JSON-serializable dictionary.
-    """
-    clean_dict = {}
+
+def clean_and_serialize_dict(burst_dict: dict[str, Any]) -> dict[str, Any]:
+    """Convert a dictionary with astropy objects into JSON-serializable values."""
+    import astropy.units as u
+    from astropy.time import Time
+
+    clean_dict: dict[str, Any] = {}
     for key, value in burst_dict.items():
         if isinstance(value, u.Quantity):
             clean_dict[key] = value.value
@@ -216,17 +193,16 @@ def clean_and_serialize_dict(burst_dict):
             clean_dict[key] = value
     return clean_dict
 
-def append_to_json(new_data_dict, filename):
-    """
-    Reads a JSON file containing a list of dictionaries, appends a new
-    dictionary to the list, and writes it back to the file.
+
+def append_to_json(new_data_dict: dict[str, Any], filename: str) -> None:
+    """Append a dictionary to a JSON file containing a list of records.
 
     Parameters
     ----------
-    new_data_dict : dict
+    new_data_dict : dict[str, Any]
         The new dictionary to append. It can contain astropy objects.
     filename : str
-        The path to the JSON file.
+        Path to the JSON file.
     """
     # First, clean the new data to make it serializable
     clean_new_data = clean_and_serialize_dict(new_data_dict)

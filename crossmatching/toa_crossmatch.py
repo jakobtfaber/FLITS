@@ -11,28 +11,26 @@ import astropy.constants as const
 # Dispersion constant in MHz^2 pc^-1 cm^3 s
 K_DM = 4.148808e3
 
-def calculate_dm_timing_error(dm_uncertainty, f_obs, f_ref):
-    """
-    Calculates the timing error due to DM uncertainty.
+def calculate_dm_timing_error(
+    dm_uncertainty: float,
+    f_obs: u.Quantity,
+    f_ref: u.Quantity,
+) -> u.Quantity:
+    """Calculate the timing error due to DM uncertainty.
 
     Parameters
     ----------
     dm_uncertainty : float
-        The uncertainty in the Dispersion Measure (pc/cm^3).
-    f_obs : astropy.units.Quantity
-        The central observing frequency in MHz.
-    f_ref : astropy.units.Quantity
-        The reference frequency in MHz.
+        The uncertainty in the dispersion measure (pc cm^-3).
+    f_obs, f_ref : `~astropy.units.Quantity`
+        The observing and reference frequencies in MHz.
 
     Returns
     -------
-    astropy.units.Quantity
+    `~astropy.units.Quantity`
         The timing error in milliseconds.
     """
-    # Calculate the time shift in seconds
     time_shift = K_DM * dm_uncertainty * (1 / f_obs.value**2 - 1 / f_ref.value**2) * u.s
-    
-    # Return the absolute value in milliseconds
     return np.abs(time_shift.to(u.ms))
 
 
@@ -108,7 +106,8 @@ src = SkyCoord(source_coord, unit=(u.hourangle, u.deg), frame='icrs')
 chime_loc = EarthLocation.of_site('DRAO')
 dsa_loc = EarthLocation.of_site('OVRO')
 
-def geometric_delay(t):
+def geometric_delay(t: Time) -> u.Quantity:
+    """Compute geometric delay between CHIME and DSA-110 at time ``t``."""
     p1 = chime_loc.get_gcrs(t).cartesian.xyz
     p2 = dsa_loc.get_gcrs(t).cartesian.xyz
     proj = (p2 - p1).dot(src.cartesian.xyz)
