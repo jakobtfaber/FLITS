@@ -254,10 +254,10 @@ def make_beautiful_corner(samples, param_names, best_params=None, title=""):
     #plt.tight_layout()
     
     # Print summary statistics
-    print("\nParameter Summary (median [16%, 84%]):")
+    logger.info("\nParameter Summary (median [16%, 84%]):")
     for i, name in enumerate(param_names):
         q16, q50, q84 = np.percentile(samples[:, i], [16, 50, 84])
-        print(f"{name}: {q50:.3f} [{q16:.3f}, {q84:.3f}]")
+        logger.info(f"{name}: {q50:.3f} [{q16:.3f}, {q84:.3f}]")
     
     return fig
 
@@ -349,10 +349,10 @@ def make_beautiful_corner_wide(samples, param_names, best_params=None, title="")
     #plt.tight_layout()
     
     # Print summary statistics
-    print("\nParameter Summary (median [16%, 84%]):")
+    logger.info("\nParameter Summary (median [16%, 84%]):")
     for i, name in enumerate(param_names):
         q16, q50, q84 = np.percentile(samples[:, i], [16, 50, 84])
-        print(f"{name}: {q50:.3f} [{q16:.3f}, {q84:.3f}]")
+        logger.info(f"{name}: {q50:.3f} [{q16:.3f}, {q84:.3f}]")
     
     return fig
     
@@ -405,14 +405,14 @@ def quick_chain_check(sampler):
     initial_spread = np.std(chain[0], axis=0)
     relative_drift = param_drift / initial_spread
     
-    print("Chain Health Check:")
-    print(f"  Log-prob stability: {log_prob_spread:.2f} (want < 1.0)")
-    print(f"  Parameter drift: {np.mean(relative_drift):.2f} (want < 0.1)")
+    logger.info("Chain Health Check:")
+    logger.info(f"  Log-prob stability: {log_prob_spread:.2f} (want < 1.0)")
+    logger.info(f"  Parameter drift: {np.mean(relative_drift):.2f} (want < 0.1)")
     
     if log_prob_spread > 1.0 or np.mean(relative_drift) > 0.1:
-        print("  ⚠️  Chains may need more steps!")
-        print("  Consider running: sampler.run_mcmc(None, 1000, progress=True)")
+        logger.info("  ⚠️  Chains may need more steps!")
+        logger.info("  Consider running: sampler.run_mcmc(None, 1000, progress=True)")
     else:
-        print("  ✓ Chains look converged")
+        logger.info("  ✓ Chains look converged")
     
     return log_prob_spread < 1.0 and np.mean(relative_drift) < 0.1
