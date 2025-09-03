@@ -12,6 +12,7 @@ Mode is auto‑detected.
 from __future__ import annotations
 
 import json
+import logging
 import warnings
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -20,6 +21,9 @@ from typing import Literal, Optional, Union
 import numpy as np
 from numpy.typing import NDArray
 from scipy import signal, stats
+
+# Setup logging
+log = logging.getLogger(__name__)
 
 EPS = np.finfo(np.float32).tiny
 
@@ -222,4 +226,4 @@ if __name__ == "__main__":
     residual = raw - np.mean(raw, axis=0)  # skewed around 0
     desc = estimate_noise_descriptor(residual)
     fake = desc.sample(seed=42)
-    print("Detected", desc.kind, "Skew(original)", stats.skew(residual), "Skew(fake)", stats.skew(fake))
+    log.info(f"Detected {desc.kind}, Skew(original) {stats.skew(residual):.3f}, Skew(fake) {stats.skew(fake):.3f}")

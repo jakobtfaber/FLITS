@@ -81,10 +81,10 @@ def update_yaml_config(config_path, key_path, new_value):
         with open(config_path, 'w') as f:
             yaml.dump(config_data, f, default_flow_style=False, sort_keys=False)
         
-        print(f"Successfully updated '{'.'.join(key_path)}' to {new_value}")
+        log.info(f"Successfully updated '{'.'.join(key_path)}' to {new_value}")
 
     except Exception as e:
-        print(f"Error updating YAML file: {e}")
+        log.error(f"Error updating YAML file: {e}")
 
 def update_yaml_guesses(config_path, model_name, new_params_dict):
     """
@@ -116,12 +116,12 @@ def update_yaml_guesses(config_path, model_name, new_params_dict):
             # sort_keys=False preserves the original order as much as possible
             yaml.dump(config_data, f, default_flow_style=False, sort_keys=False)
 
-        print(f"Successfully updated initial guesses for '{model_name}' in {config_path}")
+        log.info(f"Successfully updated initial guesses for '{model_name}' in {config_path}")
 
     except FileNotFoundError:
-        print(f"ERROR: Config file not found at {config_path}")
+        log.error(f"Config file not found at {config_path}")
     except Exception as e:
-        print(f"An error occurred while updating the YAML file: {e}")
+        log.error(f"An error occurred while updating the YAML file: {e}")
 
 def update_fitting_parameter(config_path, param_name, new_value):
     """
@@ -150,12 +150,12 @@ def update_fitting_parameter(config_path, param_name, new_value):
         with open(config_path, 'w') as f:
             yaml.dump(config_data, f, default_flow_style=False, sort_keys=False)
 
-        print(f"Successfully updated '{param_name}' to '{new_value}' in {config_path}")
+        log.info(f"Successfully updated '{param_name}' to '{new_value}' in {config_path}")
 
     except FileNotFoundError:
-        print(f"ERROR: Config file not found at {config_path}")
+        log.error(f"Config file not found at {config_path}")
     except Exception as e:
-        print(f"An error occurred while updating the YAML file: {e}")
+        log.error(f"An error occurred while updating the YAML file: {e}")
         
 def update_pipeline_parameter(config_path, param_name, new_value):
     """
@@ -182,9 +182,9 @@ def update_pipeline_parameter(config_path, param_name, new_value):
         with open(config_path, 'w') as f:
             yaml.dump(config_data, f, default_flow_style=False, sort_keys=False)
 
-        print(f"Successfully updated '{param_name}' to '{new_value}' in {config_path}")
+        log.info(f"Successfully updated '{param_name}' to '{new_value}' in {config_path}")
 
     except FileNotFoundError:
-        print(f"ERROR: Config file not found at {config_path}")
+        log.error(f"Config file not found at {config_path}")
     except Exception as e:
-        print(f"An error occurred while updating the YAML file: {e}")
+        log.error(f"An error occurred while updating the YAML file: {e}")

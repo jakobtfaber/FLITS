@@ -18,12 +18,16 @@ Typical usage
 ```
 python
 from burstfit_modelselect import fit_models_bic
+import logging
+
+log = logging.getLogger(__name__)
+
 best_key, res = fit_models_bic(
     data=ds, freq=f, time=t,
     dm_init=0.0, init=p0,
     n_steps=1500, pool=None,
 )
-print("Winner:", best_key)
+log.info(f"Winner: {best_key}")
 # sampler, bic, logL_max for the best model
 sampler = res[best_key][0]
 ```

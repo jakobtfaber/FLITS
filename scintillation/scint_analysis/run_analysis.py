@@ -34,7 +34,8 @@ def main():
     try:
         loaded_config = config.load_config(args.burst_config_path)
     except Exception as e:
-        print(f"Error: Could not load configuration. {e}")
+        # Use basic logging before the pipeline logging is set up
+        logging.error(f"Could not load configuration. {e}")
         return
 
     # 3. Set up Logging
