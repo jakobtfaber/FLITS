@@ -16,9 +16,14 @@ Overriding a setting from the command line:
 """
 import sys
 import argparse
+import logging
 import yaml
 from pathlib import Path
 import matplotlib.pyplot as plt
+
+# Setup logging
+log = logging.getLogger("run_analysis")
+logging.basicConfig(level=logging.INFO, format="[%(levelname)s | %(name)s] %(message)s")
 
 # --- Ensure the project's root directory is in the Python path ---
 # This allows the script to be run from anywhere and still find the scat_analysis module.
@@ -31,9 +36,9 @@ try:
         make_beautiful_corner
     )
 except ImportError:
-    print("Error: Could not import the 'scat_analysis' package.")
-    print("Please ensure this script is in the project's root directory,")
-    print("or add the project root to your PYTHONPATH.")
+    log.error("Could not import the 'scat_analysis' package.")
+    log.error("Please ensure this script is in the project's root directory,")
+    log.error("or add the project root to your PYTHONPATH.")
     sys.exit(1)
 
 
@@ -62,7 +67,7 @@ def main():
     
     args = parser.parse_args()
 
-    print(f"--- Loading configuration from: {args.config_path} ---")
+    log.info(f"Loading configuration from: {args.config_path}")
     with open(args.config_path, 'r') as f:
         config = yaml.safe_load(f)
 
@@ -83,7 +88,7 @@ def main():
     for key, value in vars(args).items():
         if key not in ['config_path', 'telcfg', 'sampcfg'] and value is not None:
             config[key] = value
-            print(f"  -> Overriding '{key}' with command-line value: {value}")
+            log.debug(f"Overriding '{key}' with command-line value: {value}")
             
     if 'path' not in config:
         raise ValueError("Data file 'path' must be specified in the YAML config or via --path.")
@@ -92,7 +97,7 @@ def main():
     data_path = Path(config.pop('path'))
     dm_init = config.pop('dm_init', 0.0)
     
-    print(f"\n--- Starting analysis for: {data_path.name} ---")
+    log.info(f"Starting analysis for: {data_path.name}")
 
     pipe = BurstPipeline(path=data_path, dm_init=dm_init, **config)
     results = pipe.run_full(
@@ -102,32 +107,32 @@ def main():
         show=False
     )
     
-    print("\n--- Initial Pipeline Run Summary ---")
-    print(f"Best model found: {results['best_key']}")
+    log.info("Initial Pipeline Run Summary")
+    log.info(f"Best model found: {results['best_key']}")
     if results.get('goodness_of_fit'):
-        print(f"Reduced Chi-squared: {results['goodness_of_fit']['chi2_reduced']:.2f}")
-    print("Best-fit parameters (from highest-likelihood sample):")
-    print(results['best_params'])
+        log.info(f"Reduced Chi-squared: {results['goodness_of_fit']['chi2_reduced']:.2f}")
+    log.info("Best-fit parameters (from highest-likelihood sample):")
+    log.info(f"{results['best_params']}")
 
     if config.get('extend_chain', False):
         sampler = results["sampler"]
         sampler.pool = None
 
-        print("\n--- Starting Interactive Chain Convergence Check ---")
+        log.info("Starting Interactive Chain Convergence Check")
         chunks_added = 0
         max_chunks = config.get('max_chunks', 5)
         chunk_size = config.get('chunk_size', 2000)
         
         while not quick_chain_check(sampler):
             if chunks_added >= max_chunks:
-                print(f"Reached max extra steps ({max_chunks * chunk_size}); proceeding.")
+                log.info(f"Reached max extra steps ({max_chunks * chunk_size}); proceeding.")
                 break
-            print(f"\nChain not fully converged. Running for {chunk_size} more steps...")
+            log.info(f"Chain not fully converged. Running for {chunk_size} more steps...")
             sampler.run_mcmc(None, chunk_size, progress=True)
             chunks_added += 1
 
         # --- 5. Generate and Save Final Corner Plot ---
-        print("\n--- Generating Final Corner Plot ---")
+        log.info("Generating Final Corner Plot")
         param_names = results["param_names"]
         best_p = results["best_params"] # Use original best-fit as truth value for the plot
         
@@ -140,10 +145,10 @@ def main():
 
         corner_path = data_path.with_name(f"{data_path.stem}_corner.png")
         fig_corner.savefig(corner_path, dpi=200, bbox_inches="tight")
-        print(f"Saved final corner plot to: {corner_path}")
+        log.info(f"Saved final corner plot to: {corner_path}")
         plt.show()
 
-    print("\n--- Analysis complete. ---")
+    log.info("Analysis complete.")
 
 
 if __name__ == "__main__":
