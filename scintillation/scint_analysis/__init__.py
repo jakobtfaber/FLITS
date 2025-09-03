@@ -10,12 +10,19 @@ from .core import DynamicSpectrum, ACF
 # Configuration loading from config.py
 from .config import load_config
 
-# Noise modeling and synthesis tools from noise_model.py
+# Noise modeling and synthesis tools
 from .noise import NoiseDescriptor, estimate_noise_descriptor
 
-# Main pipeline controller from pipeline.py
-# Now, when this is imported, the noise_model is already known to the package.
+# Stage utilities
+from .cache_manager import CacheManager
+from .data_preparation import DataPreparation
+from .noise_estimator import NoiseEstimator
+from .acf_analyzer import ACFAnalyzer
+from .plot_manager import PlotManager
+
+# Main pipeline controller
 from .pipeline import ScintillationAnalysis
 
-# Key plotting functions from plotting.py
+# Key plotting functions
 from .plotting import plot_analysis_overview, plot_noise_distribution
+
