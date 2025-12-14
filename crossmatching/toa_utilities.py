@@ -1,4 +1,7 @@
 import importlib
+import json
+import logging
+import os
 import numpy as np
 from scipy.signal import savgol_filter
 
@@ -7,6 +10,9 @@ from matplotlib import rcParams
 from matplotlib.colors import LogNorm
 from matplotlib.ticker import ScalarFormatter
 import matplotlib.patches as patches
+
+# Setup logging
+log = logging.getLogger("toa_utilities")
 
 from matplotlib import rcParams
 rcParams['mathtext.fontset'] = 'dejavuserif'
@@ -191,10 +197,10 @@ def measure_fwhm(timeseries, time_resolution, t_factor):
         adjusted_time_resolution = time_resolution * t_factor
         return _measure_fwhm_core(timeseries, adjusted_time_resolution)
     except IndexError:
-        print("Could not measure FWHM: Pulse is at the edge of the time window.")
+        log.warning("Could not measure FWHM: Pulse is at the edge of the time window.")
         return np.nan
     except Exception as e:
-        print(f"An unexpected error occurred during FWHM measurement: {e}")
+        log.error(f"An unexpected error occurred during FWHM measurement: {e}")
         return np.nan
 
 def calculate_dm_timing_error(dDM, f_obs, f_ref, K_DM = 4.148808e3):
@@ -258,14 +264,14 @@ def append_to_json(new_data_dict, filename):
                 data_list = json.load(f)
             # Ensure the loaded data is a list
             if not isinstance(data_list, list):
-                print(f"Error: JSON file '{filename}' does not contain a list.")
+                log.error(f"JSON file '{filename}' does not contain a list.")
                 # Start with a new list containing the new data
                 data_list = [clean_new_data]
             else:
                 # Append the new dictionary
                 data_list.append(clean_new_data)
         except json.JSONDecodeError:
-            print(f"Warning: Could not decode JSON from '{filename}'. Starting a new file.")
+            log.warning(f"Could not decode JSON from '{filename}'. Starting a new file.")
             data_list = [clean_new_data]
     else:
         # If the file doesn't exist or is empty, start a new list
@@ -275,5 +281,5 @@ def append_to_json(new_data_dict, filename):
     with open(filename, 'w') as f:
         json.dump(data_list, f, indent=4)
         
-    print(f"Successfully appended data to {filename}")
+    log.info(f"Successfully appended data to {filename}")
 

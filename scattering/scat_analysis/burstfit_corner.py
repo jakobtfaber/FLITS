@@ -14,6 +14,9 @@ import contextlib
 from pathlib import Path
 from typing import Any, Dict, Sequence
 
+# Setup logging
+log = logging.getLogger("burstfit.corner")
+
 import corner
 import matplotlib.pyplot as plt
 import numpy as np
@@ -32,8 +35,8 @@ def diagnose_sampler_convergence(sampler, param_names):
     
     n_steps, n_walkers, n_params = chain.shape
     
-    print(f"Chain shape: {chain.shape}")
-    print(f"Total samples: {n_steps * n_walkers}")
+    log.info(f"Chain shape: {chain.shape}")
+    log.info(f"Total samples: {n_steps * n_walkers}")
     
     # 1. Check log probability evolution
     fig, axes = plt.subplots(2, 1, figsize=(10, 8))
@@ -71,14 +74,14 @@ def diagnose_sampler_convergence(sampler, param_names):
     # 3. Autocorrelation analysis
     try:
         tau = sampler.get_autocorr_time(quiet=True)
-        print("\nAutocorrelation times:")
+        log.info("\nAutocorrelation times:")
         for name, t in zip(param_names, tau):
-            print(f"  {name}: {t:.1f} steps")
+            log.info(f"  {name}: {t:.1f} steps")
         
-        print(f"\nSuggested burn-in: {int(2 * np.max(tau))} steps")
-        print(f"Suggested thinning: {int(0.5 * np.min(tau))}")
+        log.info(f"\nSuggested burn-in: {int(2 * np.max(tau))} steps")
+        log.info(f"Suggested thinning: {int(0.5 * np.min(tau))}")
     except:
-        print("Could not compute autocorrelation time (chain might be too short)")
+        log.warning("Could not compute autocorrelation time (chain might be too short)")
     
     # 4. Gelman-Rubin statistic (R-hat)
     def gelman_rubin(chain):
@@ -103,11 +106,11 @@ def diagnose_sampler_convergence(sampler, param_names):
         R_hat = np.sqrt(var_est / W)
         return R_hat
     
-    print("\nGelman-Rubin R-hat (should be < 1.1):")
+    log.info("\nGelman-Rubin R-hat (should be < 1.1):")
     for i, name in enumerate(param_names):
         r_hat = gelman_rubin(chain[:, :, i])
         status = "✓" if r_hat < 1.1 else "✗"
-        print(f"  {name}: {r_hat:.3f} {status}")
+        log.info(f"  {name}: {r_hat:.3f} {status}")
     
     return chain, log_prob
 
@@ -137,7 +140,7 @@ def get_clean_samples(sampler, param_names, verbose=True):
         burn_in = n_steps // 4  # Default fallback
     
     if verbose:
-        print(f"Detected burn-in: {burn_in} steps")
+        log.info(f"Detected burn-in: {burn_in} steps")
     
     # 2. Compute autocorrelation time for thinning
     try:
@@ -148,14 +151,14 @@ def get_clean_samples(sampler, param_names, verbose=True):
         thin = 5  # Default if autocorrelation fails
     
     if verbose:
-        print(f"Using thinning: {thin}")
+        log.info(f"Using thinning: {thin}")
     
     # 3. Get the samples
     flat_samples = sampler.get_chain(discard=burn_in, thin=thin, flat=True)
     flat_log_prob = sampler.get_log_prob(discard=burn_in, thin=thin, flat=True)
     
     if verbose:
-        print(f"Final samples: {flat_samples.shape[0]} (from {n_steps * n_walkers} total)")
+        log.info(f"Final samples: {flat_samples.shape[0]} (from {n_steps * n_walkers} total)")
     
     # 4. Remove outliers (optional but helpful for visualization)
     # Keep only samples within 99.9% of log probability range
@@ -165,7 +168,7 @@ def get_clean_samples(sampler, param_names, verbose=True):
     if verbose:
         n_removed = np.sum(~good_samples)
         if n_removed > 0:
-            print(f"Removed {n_removed} outlier samples")
+            log.info(f"Removed {n_removed} outlier samples")
     
     return flat_samples[good_samples]
 
@@ -250,11 +253,11 @@ def make_beautiful_corner(samples, param_names, best_params=None, title=""):
     # Adjust layout
     #plt.tight_layout()
     
-    # Print summary statistics
-    print("\nParameter Summary (median [16%, 84%]):")
+    # Log summary statistics
+    log.info("\nParameter Summary (median [16%, 84%]):")
     for i, name in enumerate(param_names):
         q16, q50, q84 = np.percentile(samples[:, i], [16, 50, 84])
-        print(f"{name}: {q50:.3f} [{q16:.3f}, {q84:.3f}]")
+        log.info(f"{name}: {q50:.3f} [{q16:.3f}, {q84:.3f}]")
     
     return fig
 
@@ -345,11 +348,11 @@ def make_beautiful_corner_wide(samples, param_names, best_params=None, title="")
     # Adjust layout
     #plt.tight_layout()
     
-    # Print summary statistics
-    print("\nParameter Summary (median [16%, 84%]):")
+    # Log summary statistics
+    log.info("\nParameter Summary (median [16%, 84%]):")
     for i, name in enumerate(param_names):
         q16, q50, q84 = np.percentile(samples[:, i], [16, 50, 84])
-        print(f"{name}: {q50:.3f} [{q16:.3f}, {q84:.3f}]")
+        log.info(f"{name}: {q50:.3f} [{q16:.3f}, {q84:.3f}]")
     
     return fig
     
@@ -402,14 +405,14 @@ def quick_chain_check(sampler):
     initial_spread = np.std(chain[0], axis=0)
     relative_drift = param_drift / initial_spread
     
-    print("Chain Health Check:")
-    print(f"  Log-prob stability: {log_prob_spread:.2f} (want < 1.0)")
-    print(f"  Parameter drift: {np.mean(relative_drift):.2f} (want < 0.1)")
+    log.info("Chain Health Check:")
+    log.info(f"  Log-prob stability: {log_prob_spread:.2f} (want < 1.0)")
+    log.info(f"  Parameter drift: {np.mean(relative_drift):.2f} (want < 0.1)")
     
     if log_prob_spread > 1.0 or np.mean(relative_drift) > 0.1:
-        print("  ⚠️  Chains may need more steps!")
-        print("  Consider running: sampler.run_mcmc(None, 1000, progress=True)")
+        log.warning("  ⚠️  Chains may need more steps!")
+        log.warning("  Consider running: sampler.run_mcmc(None, 1000, progress=True)")
     else:
-        print("  ✓ Chains look converged")
+        log.info("  ✓ Chains look converged")
     
     return log_prob_spread < 1.0 and np.mean(relative_drift) < 0.1

@@ -28,9 +28,13 @@ python pool_utils.py -n 0     # serial
 from __future__ import annotations
 
 import argparse
+import logging
 import multiprocessing as mp
 from pathlib import Path
 from typing import Optional
+
+# Setup logging
+log = logging.getLogger("pool_utils")
 
 __all__ = ["build_pool"]
 
@@ -67,25 +71,25 @@ def build_pool(
                 try:
                     n_requested = int(ans)
                 except ValueError:
-                    print(f"[{label}] invalid input; falling back to serial")
+                    log.warning(f"[{label}] invalid input; falling back to serial")
                     return None
         
         # After getting user input, proceed to create the pool or run serially
         if n_requested == 0:
-            print(f"[{label}] serial mode chosen")
+            log.info(f"[{label}] serial mode chosen")
             return None
         else:
-            print(f"[{label}] starting Pool({n_requested})")
+            log.info(f"[{label}] starting Pool({n_requested})")
             return mp.Pool(processes=n_requested)
 
     # Case for explicit serial run
     elif n_requested == 0:
-        print(f"[{label}] running serially (nproc=0)")
+        log.info(f"[{label}] running serially (nproc=0)")
         return None
     
     # Case for explicit batch run
     elif n_requested > 0:
-        print(f"[{label}] running with nproc={n_requested}")
+        log.info(f"[{label}] running with nproc={n_requested}")
         return mp.Pool(processes=n_requested)
 
 # ---------------------------------------------------------------------
@@ -93,6 +97,9 @@ def build_pool(
 # ---------------------------------------------------------------------
 
 def _cli():
+    # Setup logging for CLI usage
+    logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
+    
     p = argparse.ArgumentParser(description="Create a multiprocessing pool for emcee-compatible code")
     p.add_argument("-n", "--nproc", type=int, default=None,
                    help="Number of worker processes (0=serial, omit=prompt)")
@@ -102,13 +109,13 @@ def _cli():
     pool = build_pool(args.nproc, auto_ok=args.yes, label=Path(__file__).stem)
 
     if pool is not None:
-        print("Pool is live; mapping dummy job...")
+        log.info("Pool is live; mapping dummy job...")
         res = pool.map(lambda x: x**2, range(5))
-        print("map(range(5)) →", res)
+        log.info(f"map(range(5)) → {res}")
         pool.close()
         pool.join()
     else:
-        print("Running serially – no pool object created.")
+        log.info("Running serially – no pool object created.")
 
 if __name__ == "__main__":
     _cli()

@@ -4,6 +4,9 @@
 import numpy as np
 import logging
 
+# Set up logger
+log = logging.getLogger(__name__)
+
 try:
     import numba as nb
     _NUMBA = True

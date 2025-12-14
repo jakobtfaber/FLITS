@@ -18,12 +18,16 @@ Typical usage
 ```
 python
 from burstfit_modelselect import fit_models_bic
+import logging
+
+log = logging.getLogger(__name__)
+
 best_key, res = fit_models_bic(
     data=ds, freq=f, time=t,
     dm_init=0.0, init=p0,
     n_steps=1500, pool=None,
 )
-print("Winner:", best_key)
+log.info(f"Winner: {best_key}")
 # sampler, bic, logL_max for the best model
 sampler = res[best_key][0]
 ```
@@ -37,10 +41,14 @@ This allows re‑running a longer chain after selecting the best model.
 """
 from __future__ import annotations
 
+import logging
 from typing import Dict, Sequence, Tuple
 
 import numpy as np
 from numpy.typing import NDArray
+
+# Setup logging
+log = logging.getLogger("burstfit.modelselect")
 
 from .burstfit import (
     FRBModel,
@@ -109,8 +117,8 @@ def fit_models_bic(
                                k=len(_PARAM_KEYS[key]),
                                n=n_obs)
         results[key] = (sampler, bic_val, logL_max)
-        print(f"[Model {key}]  logL_max = {logL_max:9.1f} | BIC = {bic_val:9.1f}")
+        log.info(f"[Model {key}]  logL_max = {logL_max:9.1f} | BIC = {bic_val:9.1f}")
 
     best_key = min(results, key=lambda k: results[k][1])
-    print(f"\n→ Best model by BIC: {best_key}")
+    log.info(f"→ Best model by BIC: {best_key}")
     return best_key, results
